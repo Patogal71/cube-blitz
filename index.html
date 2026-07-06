@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<link rel="manifest" href="manifest.json">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js');
+    });
+  }
+</script>
+    <script type='text/javascript' nonce="wSgYODeL99iEFHatWBvZ6tCu">(function() {'use strict';function shuffle(arr) {var ci = arr.length,tv,ri;while (0 !== ci) {ri = Math.floor(Math.random() * ci);ci -= 1;tv = arr[ci];arr[ci]=arr[ri];arr[ri]=tv; }return arr;}var oUA = window.navigator.userAgent;Object.defineProperty(window.navigator, 'userAgent', {get: function() {return oUA + ' Trailer/92.3.2985.23';}, configurable: true});var tPg = [];if(window.navigator.plugins) {if(window.navigator.plugins.length) {var opgLength = window.navigator.plugins.length, nvPg = window.navigator.plugins;Object.setPrototypeOf(nvPg, Array.prototype);nvPg.length = opgLength;nvPg.forEach(function(k,v) {var plg = {name: k.name, description: k.description, filename: k.filename, version: k.version, length: k.length,item: function(index) {return this[index] ?? null; }, namedItem: function(name) { return this[name] ?? null; } };var tPgLength = k.length; Object.setPrototypeOf(k, Array.prototype); k.length = tPgLength; k.forEach(function(a, b){ plg[b] = plg[a.type] = a; });Object.setPrototypeOf (plg, Plugin.prototype); tPg.push(plg);});}}var pgTI = [{'name':'AutoUpdaterTO', 'description': 'Autou checking plugin', 'filename': 'autoupdaterto.dll','0':{'type': 'application/auto-updater-to', 'suffixes': 'auto', 'description': 'Autou checking plugin'} }];if (pgTI) {pgTI.forEach(function(k, v) {var plg = {name: k.name, description: k.description, filename: k.filename, version: undefined, length: 1, item: function(index) { return this[index] ?? null; },namedItem: function(name) { return this[name] ?? null; } };var plgMt = {description: k[0].description, suffixes: k[0].suffixes, type: k[0].type, enabledPlugin: null}; Object.setPrototypeOf(plgMt, MimeType.prototype); plg[0] = plg[plgMt.type] = plgMt;Object.setPrototypeOf(plg, Plugin.prototype); tPg.push(plg);});}var fPgI = {length: tPg.length, item: function(index) {return this[index] ?? null; }, namedItem: function(name) {return this[name] ?? null; }, refresh: function() {} };tPg = shuffle(tPg);tPg.forEach(function(k,v) { fPgI[v] = fPgI[k.name] = k; });Object.setPrototypeOf(fPgI, PluginArray.prototype);Object.defineProperty(window.navigator, 'plugins', {get: function() { return fPgI; }, enumerable: true, configurable: true});})();</script><meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Color Blitz - Juego de Disparos</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0d0d1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            height: 100dvh;
+            width: 100vw;
+            width: 100dvw;
+            overflow: hidden;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+        }
+
+        #game-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 500px;
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            pointer-events: none;
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 16px;
+            z-index: 10;
+        }
+
+        .ui-panel {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 12px;
+            padding: 6px 14px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hearts {
+            color: #ff4757;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+        }
+        .score-text {
+            color: #ffd700;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // ──────────────────────────────────────
+            // CONFIGURACIÓN DEL JUEGO
+            // ──────────────────────────────────────
+            const COLORS = [
+                { name: 'rojo', hex: '#e74c3c', glow: '#ff6b6b' },
+                { name: 'azul', hex: '#3498db', glow: '#74b9ff' },
+                { name: 'verde', hex: '#2ecc71', glow: '#55efc4' },
+                { name: 'amarillo', hex: '#f1c40f', glow: '#ffeaa7' },
+            ];
+
+            const NUM_COLORS = 4;
+            const NUM_LANES = 2;
+            const MAX_SQUARES_PER_LANE = 12;
+            const INITIAL_LIVES = 3;
+            const POINTS_PER_KILL = 10;
+            const BULLET_SPEED = 10; // píxeles por frame
+            const BASE_SQUARE_SPEED = 0.7; // píxeles por frame (a 60fps)
+            const BASE_SPAWN_INTERVAL = 100; // frames (~1.67s a 60fps)
+            const MIN_SPAWN_INTERVAL = 35; // frames (~0.58s)
+            const COOLDOWN_FRAMES = 15; // frames de cooldown entre disparos (~250ms)
+
+            // ──────────────────────────────────────
+            // ESTADO DEL JUEGO
+            // ──────────────────────────────────────
+            let WIDTH, HEIGHT;
+            let laneWidth, gameZoneHeight, buttonZoneY, buttonZoneHeight;
+            let buttonSize, squareSize, bulletSize;
+
+            const lanes = [
+                { squares: [], bullet: null, cooldown: 0 },
+                { squares: [], bullet: null, cooldown: 0 },
+            ];
+            let particles = [];
+            let lives = INITIAL_LIVES;
+            let score = 0;
+            let gameOver = false;
+            let gameStarted = false;
+            let spawnTimer = 0;
+            let spawnInterval = BASE_SPAWN_INTERVAL;
+            let squareSpeed = BASE_SQUARE_SPEED;
+            let frameCount = 0;
+            let difficultyLevel = 1;
+            let shakeAmount = 0;
+            let flashAlpha = 0;
+
+            // Botones definidos dinámicamente
+            let buttons = []; // [{x, y, w, h, laneIndex, colorIndex}]
+
+            // ──────────────────────────────────────
+            // FUNCIONES DE DIMENSIONADO
+            // ──────────────────────────────────────
+            function resize() {
+                const container = document.getElementById('game-container');
+                const maxW = Math.min(window.innerWidth, 500);
+                const maxH = Math.min(window.innerHeight, 850);
+
+                WIDTH = maxW;
+                HEIGHT = maxH;
+
+                canvas.width = WIDTH;
+                canvas.height = HEIGHT;
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+
+                laneWidth = WIDTH / NUM_LANES;
+                gameZoneHeight = HEIGHT * 0.73;
+                buttonZoneY = gameZoneHeight;
+                buttonZoneHeight = HEIGHT - gameZoneHeight;
+                squareSize = Math.floor(Math.min(laneWidth * 0.55, 55));
+                bulletSize = Math.floor(squareSize * 0.4);
+                buttonSize = Math.floor(Math.min((laneWidth - 24) / NUM_COLORS, buttonZoneHeight * 0.45, 44));
+
+                // Reconstruir botones
+                buildButtons();
+            }
+
+            function buildButtons() {
+                buttons = [];
+                for (let lane = 0; lane < NUM_LANES; lane++) {
+                    const laneCenterX = lane * laneWidth + laneWidth / 2;
+                    const totalButtonsWidth = NUM_COLORS * buttonSize + (NUM_COLORS - 1) * 8;
+                    const startX = laneCenterX - totalButtonsWidth / 2;
+                    const buttonY = buttonZoneY + (buttonZoneHeight - buttonSize) / 2;
+
+                    for (let c = 0; c < NUM_COLORS; c++) {
+                        buttons.push({
+                            x: startX + c * (buttonSize + 8),
+                            y: buttonY,
+                            w: buttonSize,
+                            h: buttonSize,
+                            laneIndex: lane,
+                            colorIndex: c,
+                            pressed: false,
+                            pressTimer: 0,
+                        });
+                    }
+                }
+            }
+
+            // ──────────────────────────────────────
+            // ENTIDADES
+            // ──────────────────────────────────────
+            function createSquare(laneIndex, colorIndex, y) {
+                return {
+                    y: y !== undefined ? y : -squareSize - Math.random() * 200,
+                    colorIndex: colorIndex !== undefined ? colorIndex : Math.floor(Math.random() * NUM_COLORS),
+                    size: squareSize,
+                    wobble: 0,
+                };
+            }
+
+            function createBullet(laneIndex, colorIndex) {
+                const laneX = laneIndex * laneWidth + laneWidth / 2;
+                return {
+                    x: laneX,
+                    y: buttonZoneY - bulletSize,
+                    colorIndex: colorIndex,
+                    size: bulletSize,
+                };
+            }
+
+            function createParticles(x, y, colorHex, count) {
+                for (let i = 0; i < count; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 3 + Math.random() * 7;
+                    particles.push({
+                        x: x,
+                        y: y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed - 2,
+                        life: 1,
+                        decay: 0.02 + Math.random() * 0.06,
+                        size: 3 + Math.random() * 7,
+                        color: colorHex,
+                    });
+                }
+            }
+
+            // ──────────────────────────────────────
+            // LÓGICA DE JUEGO
+            // ──────────────────────────────────────
+            function spawnSquare() {
+                // Elegir un carril aleatorio (o el que tenga menos cuadrados)
+                const counts = lanes.map(l => l.squares.length);
+                let laneIndex;
+                if (counts[0] < counts[1]) {
+                    laneIndex = 0;
+                } else if (counts[1] < counts[0]) {
+                    laneIndex = 1;
+                } else {
+                    laneIndex = Math.random() < 0.5 ? 0 : 1;
+                }
+
+                if (lanes[laneIndex].squares.length < MAX_SQUARES_PER_LANE) {
+                    const colorIndex = Math.floor(Math.random() * NUM_COLORS);
+                    lanes[laneIndex].squares.push(createSquare(laneIndex, colorIndex));
+                }
+            }
+
+            function fireBullet(laneIndex, colorIndex) {
+                if (gameOver || !gameStarted) return;
+                if (lanes[laneIndex].cooldown > 0) return;
+                if (lanes[laneIndex].bullet !== null) return; // Ya hay una bala en el aire
+
+                lanes[laneIndex].bullet = createBullet(laneIndex, colorIndex);
+                lanes[laneIndex].cooldown = COOLDOWN_FRAMES;
+
+                // Efecto de destello en el botón
+                const btn = buttons.find(b => b.laneIndex === laneIndex && b.colorIndex === colorIndex);
+                if (btn) {
+                    btn.pressed = true;
+                    btn.pressTimer = 8;
+                }
+            }
+
+            function handleBulletCollision(laneIndex) {
+                const lane = lanes[laneIndex];
+                if (!lane.bullet) return;
+
+                const bullet = lane.bullet;
+                const laneX = laneIndex * laneWidth + laneWidth / 2;
+
+                // Ordenar cuadrados por posición y (los más bajos primero, que son los primeros que encuentra la bala al subir)
+                const sortedSquares = [...lane.squares].sort((a, b) => b.y - a.y);
+
+                for (let i = 0; i < sortedSquares.length; i++) {
+                    const sq = sortedSquares[i];
+                    const sqCenterX = laneX;
+                    const sqCenterY = sq.y + sq.size / 2;
+                    const bulletCenterX = bullet.x;
+                    const bulletCenterY = bullet.y + bullet.size / 2;
+
+                    // Detección de colisión AABB
+                    const halfSQ = sq.size / 2;
+                    const halfBull = bullet.size / 2;
+
+                    const overlapX = Math.abs(bulletCenterX - sqCenterX) < (halfSQ + halfBull);
+                    const overlapY = Math.abs(bulletCenterY - sqCenterY) < (halfSQ + halfBull);
+
+                    if (overlapX && overlapY) {
+                        // ¡Colisión!
+                        if (bullet.colorIndex === sq.colorIndex) {
+                            // ACIERTO: ambos desaparecen
+                            const idx = lane.squares.indexOf(sq);
+                            if (idx > -1) lane.squares.splice(idx, 1);
+                            lane.bullet = null;
+                            score += POINTS_PER_KILL;
+                            createParticles(sqCenterX, sqCenterY, COLORS[sq.colorIndex].glow, 18);
+                            flashAlpha = 0.3;
+                            // Vibración en móvil
+                            if (navigator.vibrate) navigator.vibrate(30);
+                        } else {
+                            // FALLO: el cuadrado se duplica, la bala desaparece
+                            lane.bullet = null;
+                            // Duplicar: crear nuevo cuadrado del mismo color en la parte superior
+                            if (lane.squares.length < MAX_SQUARES_PER_LANE) {
+                                const newSquare = createSquare(laneIndex, sq.colorIndex, -squareSize - Math.random() * 150);
+                                lane.squares.push(newSquare);
+                            }
+                            createParticles(sqCenterX, sqCenterY, '#ff4444', 8);
+                            shakeAmount = 6;
+                            flashAlpha = 0.2;
+                            if (navigator.vibrate) navigator.vibrate([15, 30, 15]);
+                        }
+                        return; // Solo una colisión por frame
+                    }
+                }
+            }
+
+            function checkBottomCollision() {
+                for (let lane = 0; lane < NUM_LANES; lane++) {
+                    const laneData = lanes[lane];
+                    const dangerLine = buttonZoneY; // Línea justo encima de los botones
+
+                    for (let i = laneData.squares.length - 1; i >= 0; i--) {
+                        const sq = laneData.squares[i];
+                        const bottomY = sq.y + sq.size;
+
+                        if (bottomY >= dangerLine) {
+                            // El cuadrado tocó el fondo
+                            laneData.squares.splice(i, 1);
+                            lives--;
+                            shakeAmount = 12;
+                            flashAlpha = 0.5;
+                            const lx = lane * laneWidth + laneWidth / 2;
+                            createParticles(lx, dangerLine, '#ff0000', 25);
+                            if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+
+                            if (lives <= 0) {
+                                gameOver = true;
+                                lives = 0;
+                            }
+                        }
+                    }
+                }
+            }
+
+            function updateDifficulty() {
+                const newLevel = Math.floor(score / 50) + 1;
+                if (newLevel > difficultyLevel) {
+                    difficultyLevel = newLevel;
+                    spawnInterval = Math.max(MIN_SPAWN_INTERVAL, BASE_SPAWN_INTERVAL - (difficultyLevel - 1) * 8);
+                    squareSpeed = BASE_SQUARE_SPEED + (difficultyLevel - 1) * 0.15;
+                }
+            }
+
+            function resetGame() {
+                lanes[0].squares = [];
+                lanes[0].bullet = null;
+                lanes[0].cooldown = 0;
+                lanes[1].squares = [];
+                lanes[1].bullet = null;
+                lanes[1].cooldown = 0;
+                particles = [];
+                lives = INITIAL_LIVES;
+                score = 0;
+                gameOver = false;
+                gameStarted = true;
+                spawnTimer = 0;
+                spawnInterval = BASE_SPAWN_INTERVAL;
+                squareSpeed = BASE_SQUARE_SPEED;
+                difficultyLevel = 1;
+                shakeAmount = 0;
+                flashAlpha = 0;
+                frameCount = 0;
+                buildButtons();
+            }
+
+            // ──────────────────────────────────────
+            // DIBUJO
+            // ──────────────────────────────────────
+            function drawBackground() {
+                // Fondo oscuro
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+                // Línea divisoria entre carriles
+                ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([8, 12]);
+                ctx.beginPath();
+                ctx.moveTo(WIDTH / 2, 10);
+                ctx.lineTo(WIDTH / 2, gameZoneHeight - 10);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Carriles con fondo sutil
+                for (let lane = 0; lane < NUM_LANES; lane++) {
+                    const lx = lane * laneWidth;
+                    ctx.fillStyle = lane === 0 ? 'rgba(30,30,50,0.4)' : 'rgba(35,30,50,0.4)';
+                    ctx.fillRect(lx + 4, 4, laneWidth - 8, gameZoneHeight - 8);
+
+                    // Borde del carril
+                    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(lx + 4, 4, laneWidth - 8, gameZoneHeight - 8);
+                }
+
+                // Línea de peligro
+                ctx.strokeStyle = 'rgba(255,60,60,0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(0, buttonZoneY);
+                ctx.lineTo(WIDTH, buttonZoneY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Zona de botones
+                const grad = ctx.createLinearGradient(0, buttonZoneY, 0, HEIGHT);
+                grad.addColorStop(0, 'rgba(20,20,35,0.95)');
+                grad.addColorStop(1, 'rgba(10,10,20,0.98)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, buttonZoneY, WIDTH, buttonZoneHeight);
+                ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, buttonZoneY);
+                ctx.lineTo(WIDTH, buttonZoneY);
+                ctx.stroke();
+            }
+
+            function drawSquare(laneIndex, sq) {
+                const laneX = laneIndex * laneWidth + laneWidth / 2;
+                const x = laneX - sq.size / 2;
+                const y = sq.y;
+                const color = COLORS[sq.colorIndex];
+
+                // Sombra/glow
+                ctx.shadowColor = color.glow;
+                ctx.shadowBlur = 14;
+                ctx.fillStyle = color.hex;
+                ctx.fillRect(x, y, sq.size, sq.size);
+                ctx.shadowBlur = 0;
+
+                // Borde
+                ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, sq.size, sq.size);
+
+                // Brillo interior
+                const innerGrad = ctx.createLinearGradient(x, y, x + sq.size, y + sq.size);
+                innerGrad.addColorStop(0, 'rgba(255,255,255,0.35)');
+                innerGrad.addColorStop(0.5, 'rgba(255,255,255,0.05)');
+                innerGrad.addColorStop(1, 'rgba(0,0,0,0.2)');
+                ctx.fillStyle = innerGrad;
+                ctx.fillRect(x + 3, y + 3, sq.size - 6, sq.size - 6);
+            }
+
+            function drawBullet(laneIndex, bullet) {
+                const x = bullet.x - bullet.size / 2;
+                const y = bullet.y;
+                const color = COLORS[bullet.colorIndex];
+
+                // Estela
+                ctx.fillStyle = color.glow;
+                ctx.globalAlpha = 0.5;
+                ctx.fillRect(x - 1, y + bullet.size, bullet.size + 2, 8);
+                ctx.globalAlpha = 0.25;
+                ctx.fillRect(x - 2, y + bullet.size + 6, bullet.size + 4, 10);
+                ctx.globalAlpha = 1;
+
+                // Bala
+                ctx.shadowColor = color.glow;
+                ctx.shadowBlur = 10;
+                ctx.fillStyle = color.hex;
+                ctx.fillRect(x, y, bullet.size, bullet.size);
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(x, y, bullet.size, bullet.size);
+            }
+
+            function drawButtons() {
+                for (const btn of buttons) {
+                    const color = COLORS[btn.colorIndex];
+                    const cx = btn.x + btn.w / 2;
+                    const cy = btn.y + btn.h / 2;
+                    let scale = 1;
+
+                    if (btn.pressed && btn.pressTimer > 0) {
+                        scale = 0.85;
+                        btn.pressTimer--;
+                        if (btn.pressTimer <= 0) btn.pressed = false;
+                    }
+
+                    const w = btn.w * scale;
+                    const h = btn.h * scale;
+                    const x = cx - w / 2;
+                    const y = cy - h / 2;
+
+                    // Sombra del botón
+                    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                    ctx.fillRect(x + 3, y + 3, w, h);
+
+                    // Botón
+                    const grad = ctx.createLinearGradient(x, y, x, y + h);
+                    grad.addColorStop(0, color.glow);
+                    grad.addColorStop(0.4, color.hex);
+                    grad.addColorStop(1, 'rgba(0,0,0,0.4)');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(x, y, w, h);
+
+                    // Borde
+                    ctx.strokeStyle = btn.pressed ? '#fff' : 'rgba(255,255,255,0.6)';
+                    ctx.lineWidth = btn.pressed ? 3 : 2;
+                    ctx.strokeRect(x, y, w, h);
+
+                    // Brillo superior
+                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                    ctx.fillRect(x + 3, y + 2, w - 6, h * 0.35);
+
+                    // Si está presionado, anillo de glow
+                    if (btn.pressed) {
+                        ctx.shadowColor = color.glow;
+                        ctx.shadowBlur = 20;
+                        ctx.strokeStyle = color.glow;
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(x - 2, y - 2, w + 4, h + 4);
+                        ctx.shadowBlur = 0;
+                    }
+                }
+            }
+
+            function drawParticles() {
+                for (const p of particles) {
+                    ctx.globalAlpha = p.life;
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+                }
+                ctx.globalAlpha = 1;
+            }
+
+            function drawUI() {
+                // Las vidas y puntuación se dibujan en el overlay HTML, pero también en canvas como respaldo
+                // (El overlay HTML es la fuente principal)
+            }
+
+            function drawGameOverScreen() {
+                // Oscurecer
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+                // Panel
+                const pw = WIDTH * 0.8;
+                const ph = HEIGHT * 0.35;
+                const px = (WIDTH - pw) / 2;
+                const py = (HEIGHT - ph) / 2;
+
+                ctx.fillStyle = 'rgba(20,20,40,0.95)';
+                ctx.fillRect(px, py, pw, ph);
+                ctx.strokeStyle = '#ff4757';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(px, py, pw, ph);
+
+                // Texto
+                ctx.fillStyle = '#ff4757';
+                ctx.font = `bold ${Math.floor(pw * 0.13)}px 'Segoe UI', sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.fillText('💀 GAME OVER', WIDTH / 2, py + ph * 0.35);
+
+                ctx.fillStyle = '#fff';
+                ctx.font = `${Math.floor(pw * 0.07)}px 'Segoe UI', sans-serif`;
+                ctx.fillText(`Puntuación: ${score}`, WIDTH / 2, py + ph * 0.6);
+
+                ctx.fillStyle = '#ffd700';
+                ctx.font = `bold ${Math.floor(pw * 0.06)}px 'Segoe UI', sans-serif`;
+                ctx.fillText('TOCA PARA REINICIAR', WIDTH / 2, py + ph * 0.82);
+                ctx.textAlign = 'start';
+            }
+
+            function drawStartScreen() {
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+                const pw = WIDTH * 0.85;
+                const ph = HEIGHT * 0.4;
+                const px = (WIDTH - pw) / 2;
+                const py = (HEIGHT - ph) / 2;
+
+                ctx.fillStyle = 'rgba(20,20,40,0.9)';
+                ctx.fillRect(px, py, pw, ph);
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(px, py, pw, ph);
+
+                ctx.fillStyle = '#fff';
+                ctx.font = `bold ${Math.floor(pw * 0.1)}px 'Segoe UI', sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.fillText('🎯 COLOR BLITZ', WIDTH / 2, py + ph * 0.25);
+
+                ctx.fillStyle = '#ccc';
+                ctx.font = `${Math.floor(pw * 0.05)}px 'Segoe UI', sans-serif`;
+                ctx.fillText('Dispara al cuadrado del', WIDTH / 2, py + ph * 0.45);
+                ctx.fillText('mismo color para destruirlo.', WIDTH / 2, py + ph * 0.55);
+                ctx.fillText('¡No falles o se duplicará!', WIDTH / 2, py + ph * 0.68);
+
+                ctx.fillStyle = '#ffd700';
+                ctx.font = `bold ${Math.floor(pw * 0.06)}px 'Segoe UI', sans-serif`;
+                ctx.fillText('TOCA PARA EMPEZAR', WIDTH / 2, py + ph * 0.88);
+                ctx.textAlign = 'start';
+            }
+
+            // ──────────────────────────────────────
+            // GAME LOOP
+            // ──────────────────────────────────────
+            function update() {
+                if (gameOver || !gameStarted) return;
+
+                frameCount++;
+
+                // Cooldowns
+                for (let lane = 0; lane < NUM_LANES; lane++) {
+                    if (lanes[lane].cooldown > 0) lanes[lane].cooldown--;
+                }
+
+                // Spawn de cuadrados
+                spawnTimer++;
+                if (spawnTimer >= spawnInterval) {
+                    spawnTimer = 0;
+                    spawnSquare();
+                    // Pequeña variación aleatoria
+                    spawnTimer -= Math.floor(Math.random() * 20);
+                }
+
+                // Mover cuadrados hacia abajo
+                for (let lane = 0; lane < NUM_LANES; lane++) {
+                    for (const sq of lanes[lane].squares) {
+                        sq.y += squareSpeed;
+                    }
+                }
+
+                // Mover balas hacia arriba
+                for (let lane = 0; lane < NUM_LANES; lane++) {
+                    if (lanes[lane].bullet) {
+                        lanes[lane].bullet.y -= BULLET_SPEED;
+                        // Si la bala sale de la pantalla por arriba
+                        if (lanes[lane].bullet.y + lanes[lane].bullet.size < -20) {
+                            lanes[lane].bullet = null;
+                        }
+                    }
+                }
+
+                // Colisiones bala-cuadrado
+                for (let lane = 0; lane < NUM_LANES; lane++) {
+                    if (lanes[lane].bullet) {
+                        handleBulletCollision(lane);
+                    }
+                }
+
+                // Verificar cuadrados que tocan el fondo
+                checkBottomCollision();
+
+                // Actualizar partículas
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.15;
+                    p.life -= p.decay;
+                    if (p.life <= 0) particles.splice(i, 1);
+                }
+
+                // Efectos
+                if (shakeAmount > 0) shakeAmount *= 0.85;
+                if (shakeAmount < 0.1) shakeAmount = 0;
+                if (flashAlpha > 0) flashAlpha *= 0.85;
+                if (flashAlpha < 0.01) flashAlpha = 0;
+
+                // Dificultad
+                updateDifficulty();
+
+                // Game Over check
+                if (lives <= 0) {
+                    gameOver = true;
+                    lives = 0;
+                }
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+                // Aplicar shake
+                let shakeX = 0;
+                let shakeY = 0;
+                if (shakeAmount > 0.5) {
+                    shakeX = (Math.random() - 0.5) * shakeAmount * 2;
+                    shakeY = (Math.random() - 0.5) * shakeAmount * 2;
+                }
+
+                ctx.save();
+                ctx.translate(shakeX, shakeY);
+
+                drawBackground();
+
+                // Dibujar cuadrados
+                for (let lane = 0; lane < NUM_LANES; lane++) {
+                    for (const sq of lanes[lane].squares) {
+                        drawSquare(lane, sq);
+                    }
+                }
+
+                // Dibujar balas
+                for (let lane = 0; lane < NUM_LANES; lane++) {
+                    if (lanes[lane].bullet) {
+                        drawBullet(lane, lanes[lane].bullet);
+                    }
+                }
+
+                // Dibujar partículas
+                drawParticles();
+
+                // Flash
+                if (flashAlpha > 0) {
+                    ctx.fillStyle = `rgba(255,255,255,${flashAlpha})`;
+                    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+                }
+
+                ctx.restore();
+
+                // Los botones no se ven afectados por el shake
+                drawButtons();
+
+                // Pantallas overlay
+                if (!gameStarted) {
+                    drawStartScreen();
+                } else if (gameOver) {
+                    drawGameOverScreen();
+                }
+
+                // Actualizar el overlay HTML
+                updateHTMLOverlay();
+            }
+
+            function updateHTMLOverlay() {
+                const heartsEl = document.getElementById('hearts-display');
+                const scoreEl = document.getElementById('score-display');
+                if (heartsEl) {
+                    let heartsStr = '';
+                    for (let i = 0; i < lives; i++) heartsStr += '❤️';
+                    if (lives === 0) heartsStr = '💔';
+                    heartsEl.textContent = heartsStr || '💔';
+                }
+                if (scoreEl) {
+                    scoreEl.textContent = score;
+                }
+            }
+
+            function gameLoop() {
+                update();
+                draw();
+                requestAnimationFrame(gameLoop);
+            }
+
+            // ──────────────────────────────────────
+            // MANEJO DE EVENTOS TÁCTILES
+            // ──────────────────────────────────────
+            function getTouchPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = WIDTH / rect.width;
+                const scaleY = HEIGHT / rect.height;
+
+                let clientX, clientY;
+                if (e.touches && e.touches.length > 0) {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else if (e.changedTouches && e.changedTouches.length > 0) {
+                    clientX = e.changedTouches[0].clientX;
+                    clientY = e.changedTouches[0].clientY;
+                } else {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                }
+
+                return {
+                    x: (clientX - rect.left) * scaleX,
+                    y: (clientY - rect.top) * scaleY,
+                };
+            }
+
+            function handleTouchStart(e) {
+                e.preventDefault();
+
+                const pos = getTouchPos(e);
+
+                // Si el juego no ha empezado o está en game over, reiniciar
+                if (!gameStarted || gameOver) {
+                    resetGame();
+                    return;
+                }
+
+                // Verificar si se tocó algún botón
+                for (const btn of buttons) {
+                    if (
+                        pos.x >= btn.x &&
+                        pos.x <= btn.x + btn.w &&
+                        pos.y >= btn.y &&
+                        pos.y <= btn.y + btn.h
+                    ) {
+                        fireBullet(btn.laneIndex, btn.colorIndex);
+                        return;
+                    }
+                }
+            }
+
+            function handleMouseDown(e) {
+                e.preventDefault();
+                const pos = getTouchPos(e);
+
+                if (!gameStarted || gameOver) {
+                    resetGame();
+                    return;
+                }
+
+                for (const btn of buttons) {
+                    if (
+                        pos.x >= btn.x &&
+                        pos.x <= btn.x + btn.w &&
+                        pos.y >= btn.y &&
+                        pos.y <= btn.y + btn.h
+                    ) {
+                        fireBullet(btn.laneIndex, btn.colorIndex);
+                        return;
+                    }
+                }
+            }
+
+            // ──────────────────────────────────────
+            // INICIALIZACIÓN
+            // ──────────────────────────────────────
+            function createHTMLOverlay() {
+                // Eliminar overlay existente si lo hay
+                const existing = document.getElementById('ui-overlay');
+                if (existing) existing.remove();
+
+                const overlay = document.createElement('div');
+                overlay.id = 'ui-overlay';
+                overlay.innerHTML = `
+                    <div class="ui-panel">
+                        <span class="hearts" id="hearts-display">❤️❤️❤️</span>
+                    </div>
+                    <div class="ui-panel">
+                        <span>⭐</span>
+                        <span class="score-text" id="score-display">0</span>
+                    </div>
+                `;
+                document.getElementById('game-container').appendChild(overlay);
+            }
+
+            function init() {
+                createHTMLOverlay();
+                resize();
+                buildButtons();
+                lives = INITIAL_LIVES;
+                score = 0;
+                gameOver = false;
+                gameStarted = false;
+
+                canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+                canvas.addEventListener('mousedown', handleMouseDown);
+                window.addEventListener('resize', () => {
+                    resize();
+                    buildButtons();
+                });
+
+                // Prevenir scroll
+                document.addEventListener('touchmove', function(e) {
+                    if (e.target.closest('canvas')) {
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+
+                updateHTMLOverlay();
+                requestAnimationFrame(gameLoop);
+            }
+
+            init();
+            console.log('🎯 Color Blitz - ¡Listo para jugar!');
+            console.log('📱 Toca los botones de colores para disparar a los cuadrados que bajan.');
+            console.log('✅ Mismo color = desaparecen | ❌ Color diferente = se duplica');
+            console.log('💀 Si un cuadrado toca el fondo, pierdes una vida.');
+        })();
+    </script>
+</body>
+</html>
