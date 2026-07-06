@@ -1,6 +1,6 @@
 {
-  "name": "Color Blitz",
-  "short_name": "ColorBlitz",
+  "name": "Cube Blitz",
+  "short_name": "Cubeblitz",
   "description": "Juego de disparos de colores",
   "start_url": "./index.html",
   "display": "standalone",
